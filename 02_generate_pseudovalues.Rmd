@@ -1,0 +1,107 @@
+
+
+```{r}
+
+library(MCC)
+setwd("~/MCC Research")
+source("01_generate_data.R")
+
+```
+
+
+```{r}
+
+#Generate pseudo-values at a fixed evaluation time
+t_eval <- 5
+
+pseudo <- MCC::GenPseudo(
+  data = dat,
+  tau  = t_eval
+)
+
+str(pseudo)
+head(pseudo)
+
+
+```
+```{r}
+# Note: Sanity check assisted by generative AI
+AX <- unique(dat[, c("idx", "A", "X")])
+merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+
+tapply(merged$pseudo, merged$A, mean)
+tapply(merged$pseudo, merged$A, summary)
+
+```
+```{r}
+#Monte Carlo validation under the null
+
+set.seed(123)
+
+B <- 200        # number of repetitions
+delta_hat <- numeric(B)
+
+for (b in 1:B) {
+  
+  source("01_generate_data.R")
+  pseudo <- MCC::GenPseudo(data = dat, tau = 5)
+  
+  # Merge treatment indicator with pseudo-values
+  AX <- unique(dat[, c("idx", "A")])
+  merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+  
+  delta_hat[b] <- mean(merged$pseudo[merged$A == 1]) -
+                  mean(merged$pseudo[merged$A == 0])
+}
+
+summary(delta_hat)
+mean(delta_hat)
+
+```
+
+
+```{r}
+t_list <- c(2.5, 5, 7.5)
+AX <- unique(dat[, c("idx", "A")])
+
+out_time <- data.frame(
+  t_eval = t_list,
+  mean_A0 = NA_real_,
+  mean_A1 = NA_real_,
+  diff_A1_A0 = NA_real_
+)
+
+
+# the for loop iterates over multiple evaluation times for pseudo-values and comparing the result treatment contrasts
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval) # Generate pseudo-values at time t
+  merged_j <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+  
+  m0 <- mean(merged_j$pseudo[merged_j$A == 0])
+  m1 <- mean(merged_j$pseudo[merged_j$A == 1])
+  
+  out_time$mean_A0[j] <- m0
+  out_time$mean_A1[j] <- m1
+  out_time$diff_A1_A0[j] <- m1 - m0
+}
+
+out_time
+```
+
+
+# Regeession of pseudo-values on treatment
+
+```{r}
+
+t_eval <- 5
+pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
+
+
+
+```
+
+
+
