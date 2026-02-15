@@ -1,4 +1,5 @@
 # 01_generate_data.R
+# test Git connection
 
 # Generate data according to the simulation plan (DGP) using MCC
 #rm(list = ls())
