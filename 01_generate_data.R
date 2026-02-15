@@ -2,12 +2,6 @@
 
 
 # push test from RStudio
-# push test from RStudio
-# push test from RStudio
-# push test from RStudio
-# push test from RStudio
-# push test from RStudio
-
 
 
 # Generate data according to the simulation plan (DGP) using MCC
@@ -72,4 +66,8 @@ events_per_id <- tapply(dat$status == 1, dat$idx, sum)
 summary(events_per_id)
 
 death_per_id <- tapply(dat$status == 2, dat$idx, any)
+
 mean(death_per_id)
+
+mean(death_per_id)
+
