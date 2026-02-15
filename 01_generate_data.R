@@ -1,5 +1,14 @@
 # 01_generate_data.R
-# test Git connection
+
+
+# push test from RStudio
+# push test from RStudio
+# push test from RStudio
+# push test from RStudio
+# push test from RStudio
+# push test from RStudio
+
+
 
 # Generate data according to the simulation plan (DGP) using MCC
 #rm(list = ls())
