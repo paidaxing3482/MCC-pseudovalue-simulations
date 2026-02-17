@@ -103,5 +103,76 @@ pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
 
 ```
 
+```{r}
+
+# Pseudo-value regression
+
+t_list <- c(2.5, 5, 7.5)
+AX <- unique(dat[, c("idx", "A")])
+
+reg_out <- data.frame(
+  t_eval = t_list,
+  beta_A = NA,
+  p_A = NA
+)
+
+for (j in seq_along(t_list)) {
+  t_eval <- t_list[j]
+  pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval)
+  reg_dat <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+  
+  fit <- lm(pseudo ~ A, data = reg_dat)
+  s <- summary(fit)$coefficients
+  
+  reg_out$beta_A[j] <- s["A", "Estimate"]
+  reg_out$p_A[j] <- s["A", "Pr(>|t|)"]
+}
+
+reg_out
+
+```
+
+```{r}
+set.seed(123)
+
+B <- 50
+alpha <- 0.05
+t_list <- c(2.5, 5, 7.5)
+
+type1_out <- data.frame(
+  t_eval = t_list,
+  reject_rate = NA,
+  mean_beta = NA
+)
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  reject <- logical(B)
+  beta <- numeric(B)
+  
+  for (b in 1:B) {
+    
+    source("01_generate_data.R")
+    
+    pseudo_b <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    reg_dat <- merge(AX, pseudo_b[, c("idx", "pseudo")], by = "idx")
+    
+    fit <- lm(pseudo ~ A, data = reg_dat)
+    s <- summary(fit)$coefficients
+    
+    beta[b] <- s["A", "Estimate"]
+    reject[b] <- s["A", "Pr(>|t|)"] < alpha
+  }
+  
+  type1_out$reject_rate[j] <- mean(reject)
+  type1_out$mean_beta[j] <- mean(beta)
+}
+
+type1_out
+
+
+```
 
 
