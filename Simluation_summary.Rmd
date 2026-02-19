@@ -1,14 +1,14 @@
-## Objective
+# Objective
 
 The goal of this simulation study was to validate the pseudo-value regression method for recurrent event outcomes under the null setting.
 
-## Simulation design
+# Simulation design
 
 We simulated a two-arm study with treatment assignment and a baseline covariate. 
 Recurrent events were generated from a Poisson process and truncated by a terminal event. 
 Independent censoring was applied. No treatment effect was assumed.
 
-## Monte Carlo validation
+# Monte Carlo validation
 
 ```{r}
 library(MCC)
@@ -62,7 +62,8 @@ abline(h = 0, col = "blue")
 
 
 ```{r}
-# Generated revised by AI so knit function will be available
+# Assisted by generative AI
+
 
 set.seed(123)
 
