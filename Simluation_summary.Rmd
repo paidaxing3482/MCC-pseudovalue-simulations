@@ -1,0 +1,122 @@
+## Objective
+
+The goal of this simulation study was to validate the pseudo-value regression method for recurrent event outcomes under the null setting.
+
+## Simulation design
+
+We simulated a two-arm study with treatment assignment and a baseline covariate. 
+Recurrent events were generated from a Poisson process and truncated by a terminal event. 
+Independent censoring was applied. No treatment effect was assumed.
+
+## Monte Carlo validation
+
+```{r}
+library(MCC)
+source("01_generate_data.R")
+
+set.seed(123)
+
+B <- 500
+delta_hat <- numeric(B)
+
+for (b in 1:B) {
+  source("01_generate_data.R")
+  pseudo <- MCC::GenPseudo(data = dat, tau = 5)
+
+  AX <- unique(dat[, c("idx", "A")])
+  merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+
+  delta_hat[b] <- mean(merged$pseudo[merged$A == 1]) -
+                  mean(merged$pseudo[merged$A == 0])
+}
+
+hist(delta_hat, breaks = 30,
+     main = "Monte Carlo distribution",
+     xlab = "Treatment effect")
+abline(v = 0, col = "blue", lwd = 2)
+
+```
+#centered at zero, suggesting no bias
+
+```{r}
+t_list <- c(2.5, 5, 7.5)
+est <- numeric(length(t_list))
+
+for (j in seq_along(t_list)) {
+  source("01_generate_data.R")
+  pseudo <- MCC::GenPseudo(data = dat, tau = t_list[j])
+
+  AX <- unique(dat[, c("idx", "A")])
+  merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+
+  est[j] <- mean(merged$pseudo[merged$A == 1]) -
+            mean(merged$pseudo[merged$A == 0])
+}
+
+plot(t_list, est, type = "b",
+     xlab = "Evaluation time",
+     ylab = "Estimated treatment effect")
+abline(h = 0, col = "blue")
+
+```
+
+
+```{r}
+# Generated revised by AI so knit function will be available
+
+set.seed(123)
+
+B <- 500
+alpha <- 0.05
+t_list <- c(2.5, 5, 7.5)
+
+type1_out <- data.frame(
+  t_eval = t_list,
+  reject_rate = NA
+)
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  reject <- logical(B)
+  
+  for (b in 1:B) {
+    
+    source("01_generate_data.R")
+    
+    pseudo_b <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    reg_dat <- merge(AX, pseudo_b[, c("idx", "pseudo")], by = "idx")
+    
+    fit <- lm(pseudo ~ A, data = reg_dat)
+    pval <- summary(fit)$coefficients["A", "Pr(>|t|)"]
+    
+    reject[b] <- (pval < alpha)
+  }
+  
+  type1_out$reject_rate[j] <- mean(reject)
+}
+
+type1_out
+
+```
+
+
+
+
+
+```{r}
+
+type1_out
+plot(type1_out$t_eval, type1_out$reject_rate, type = "b",
+     xlab = "Evaluation time",
+     ylab = "Type I error")
+abline(h = 0.05, col = "blue")
+
+
+```
+
+
+
+
+

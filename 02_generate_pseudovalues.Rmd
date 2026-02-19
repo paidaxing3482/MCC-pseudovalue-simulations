@@ -133,9 +133,11 @@ reg_out
 ```
 
 ```{r}
+#type I error
+
 set.seed(123)
 
-B <- 50
+B <- 500
 alpha <- 0.05
 t_list <- c(2.5, 5, 7.5)
 
@@ -172,6 +174,7 @@ for (j in seq_along(t_list)) {
 
 type1_out
 
+#The pseudo-value regression estimator was approximately unbiased under the null setting, and the empirical Type I error was close to the nominal 5% level across evaluation time
 
 ```
 
