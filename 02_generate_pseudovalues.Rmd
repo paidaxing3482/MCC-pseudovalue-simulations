@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 
 
 ```{r}
@@ -11,7 +16,7 @@ source("01_generate_data.R")
 
 ```{r}
 
-#Generate pseudo-values at a fixed evaluation time
+# this generate pseudo-values at a fixed evaluation time
 t_eval <- 5
 
 pseudo <- MCC::GenPseudo(
@@ -34,11 +39,12 @@ tapply(merged$pseudo, merged$A, summary)
 
 ```
 ```{r}
+
 #Monte Carlo validation under the null
 
 set.seed(123)
 
-B <- 200        # number of repetitions
+B <- 200
 delta_hat <- numeric(B)
 
 for (b in 1:B) {
@@ -46,7 +52,6 @@ for (b in 1:B) {
   source("01_generate_data.R")
   pseudo <- MCC::GenPseudo(data = dat, tau = 5)
   
-  # Merge treatment indicator with pseudo-values
   AX <- unique(dat[, c("idx", "A")])
   merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
   
@@ -71,8 +76,6 @@ out_time <- data.frame(
   diff_A1_A0 = NA_real_
 )
 
-
-# the for loop iterates over multiple evaluation times for pseudo-values and comparing the result treatment contrasts
 
 for (j in seq_along(t_list)) {
   
@@ -141,7 +144,7 @@ B <- 500
 alpha <- 0.05
 t_list <- c(2.5, 5, 7.5)
 
-type1_out <- data.frame(
+type1_result <- data.frame(
   t_eval = t_list,
   reject_rate = NA,
   mean_beta = NA
@@ -168,11 +171,11 @@ for (j in seq_along(t_list)) {
     reject[b] <- s["A", "Pr(>|t|)"] < alpha
   }
   
-  type1_out$reject_rate[j] <- mean(reject)
-  type1_out$mean_beta[j] <- mean(beta)
+  type1_result$reject_rate[j] <- mean(reject)
+  type1_result$mean_beta[j] <- mean(beta)
 }
 
-type1_out
+type1_result
 
 #The pseudo-value regression estimator was approximately unbiased under the null setting, and the empirical Type I error was close to the nominal 5% level across evaluation time
 
