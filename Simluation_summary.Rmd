@@ -1,14 +1,32 @@
-# Objective
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 
-The goal of this simulation study was to validate the pseudo-value regression method for recurrent event outcomes under the null setting.
+---
 
-# Simulation design
+# The Objective: Validate the pseudo-value regression method for the recurrent event outcomes under the null setting.
 
-We simulated a two-arm study with treatment assignment and a baseline covariate. 
-Recurrent events were generated from a Poisson process and truncated by a terminal event. 
-Independent censoring was applied. No treatment effect was assumed.
+#1.sanity check
 
-# Monte Carlo validation
+```{r}
+
+library(MCC)
+source("01_generate_data.R")
+t_eval <- 5
+pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
+
+str(pseudo)
+head(pseudo)
+
+AX <- unique(dat[, c("idx", "A", "X")])
+merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+
+tapply(merged$pseudo, merged$A, mean)
+```
+
+Monte Carlo validation
 
 ```{r}
 library(MCC)
@@ -36,30 +54,75 @@ hist(delta_hat, breaks = 30,
 abline(v = 0, col = "blue", lwd = 2)
 
 ```
-#centered at zero, suggesting no bias
+
+This distribution is centered at zero, suggesting no bias
 
 ```{r}
+set.seed(123)
+
+B <- 500
 t_list <- c(2.5, 5, 7.5)
-est <- numeric(length(t_list))
+
+out_time <- data.frame(
+  t_eval = t_list,
+  mean_diff = NA_real_,
+  sd_diff = NA_real_
+)
 
 for (j in seq_along(t_list)) {
-  source("01_generate_data.R")
-  pseudo <- MCC::GenPseudo(data = dat, tau = t_list[j])
 
-  AX <- unique(dat[, c("idx", "A")])
-  merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+  t_eval <- t_list[j]
+  delta_tau <- numeric(B)
 
-  est[j] <- mean(merged$pseudo[merged$A == 1]) -
-            mean(merged$pseudo[merged$A == 0])
+  for (b in 1:B) {
+
+    source("01_generate_data.R")
+    
+    pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    merged_j <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+
+    delta_tau[b] <- mean(merged_j$pseudo[merged_j$A == 1]) -
+                    mean(merged_j$pseudo[merged_j$A == 0])
+  }
+
+  out_time$mean_diff[j] <- mean(delta_tau)
+  out_time$sd_diff[j]   <- sd(delta_tau)
 }
 
-plot(t_list, est, type = "b",
-     xlab = "Evaluation time",
-     ylab = "Estimated treatment effect")
+out_time
+
+plot(out_time$t_eval, out_time$mean_diff, type = "b",
+     xlab = "Evaluation time (tau)",
+     ylab = "Monte Carlo mean treatment contrast")
 abline(h = 0, col = "blue")
 
 ```
 
+```{r}
+# Single-run regression across tau
+t_list <- c(2.5, 5, 7.5)
+AX <- unique(dat[, c("idx", "A")])
+
+reg_out <- data.frame(
+  t_eval = t_list,
+  beta_A = NA,
+  p_A = NA
+)
+
+for (j in seq_along(t_list)) {
+  pseudo_j <- MCC::GenPseudo(data = dat, tau = t_list[j])
+  reg_dat <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+
+  fit <- lm(pseudo ~ A, data = reg_dat)
+  s <- summary(fit)$coefficients
+
+  reg_out$beta_A[j] <- s["A", "Estimate"]
+  reg_out$p_A[j] <- s["A", "Pr(>|t|)"]
+}
+
+reg_out
+```
 
 ```{r}
 # Assisted by generative AI
@@ -102,10 +165,6 @@ type1_out
 
 ```
 
-
-
-
-
 ```{r}
 
 type1_out
@@ -116,8 +175,3 @@ abline(h = 0.05, col = "blue")
 
 
 ```
-
-
-
-
-
