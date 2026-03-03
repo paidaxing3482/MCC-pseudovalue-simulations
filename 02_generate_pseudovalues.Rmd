@@ -3,7 +3,7 @@ output:
   pdf_document: default
   html_document: default
 ---
-
+#new test
 
 ```{r}
 
@@ -66,45 +66,43 @@ mean(delta_hat)
 
 
 ```{r}
+
+set.seed(123)
+
+B <- 500
 t_list <- c(2.5, 5, 7.5)
-AX <- unique(dat[, c("idx", "A")])
 
 out_time <- data.frame(
   t_eval = t_list,
-  mean_A0 = NA_real_,
-  mean_A1 = NA_real_,
-  diff_A1_A0 = NA_real_
+  mean_diff = NA_real_,
+  sd_diff = NA_real_
 )
 
-
 for (j in seq_along(t_list)) {
-  
+
   t_eval <- t_list[j]
-  pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval) # Generate pseudo-values at time t
-  merged_j <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
-  
-  m0 <- mean(merged_j$pseudo[merged_j$A == 0])
-  m1 <- mean(merged_j$pseudo[merged_j$A == 1])
-  
-  out_time$mean_A0[j] <- m0
-  out_time$mean_A1[j] <- m1
-  out_time$diff_A1_A0[j] <- m1 - m0
+  delta_tau <- numeric(B)
+
+  for (b in 1:B) {     #this loop revised by AI so it runs B times for every tau
+
+    source("01_generate_data.R")
+
+    pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    merged_j <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+
+    delta_tau[b] <- mean(merged_j$pseudo[merged_j$A == 1]) -
+                    mean(merged_j$pseudo[merged_j$A == 0])
+  }
+
+  out_time$mean_diff[j] <- mean(delta_tau)
+  out_time$sd_diff[j]   <- sd(delta_tau)
 }
 
 out_time
 ```
 
 
-# Regeession of pseudo-values on treatment
-
-```{r}
-
-t_eval <- 5
-pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
-
-
-
-```
 
 ```{r}
 
