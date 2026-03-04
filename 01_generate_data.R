@@ -25,10 +25,10 @@ lambda_d <- lambda_from_delta(delta, tau)
 m <- 4
 base_event_rate <- m / tau
 
-alphaA <- 0
+if (!exists("alphaA")) alphaA <- 0
 alphaX <- log(1.25)
 
-N_per_arm <- 50
+N_per_arm <- 100
 n_total <- 2 * N_per_arm
 
 
