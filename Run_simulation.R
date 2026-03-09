@@ -1,0 +1,292 @@
+
+library(MCC)
+source("01_generate_data.R")
+t_eval <- 5
+pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
+
+str(pseudo)
+head(pseudo)
+
+AX <- unique(dat[, c("idx", "A", "X")])
+merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+
+tapply(merged$pseudo, merged$A, mean)
+
+
+## Monte Carlo validation
+
+library(MCC)
+source("01_generate_data.R")
+
+set.seed(123)
+
+B <- 5000
+delta_hat <- numeric(B)
+
+for (b in 1:B) {
+  source("01_generate_data.R")
+  pseudo <- MCC::GenPseudo(data = dat, tau = 5)
+  
+  AX <- unique(dat[, c("idx", "A")])
+  merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
+  
+  delta_hat[b] <- mean(merged$pseudo[merged$A == 1]) -
+    mean(merged$pseudo[merged$A == 0])
+}
+
+hist(delta_hat, breaks = 30,
+     main = "Monte Carlo distribution",
+     xlab = "Treatment effect")
+abline(v = 0, col = "blue", lwd = 2)
+
+
+
+This distribution is centered at zero, suggesting no bias
+
+## Sensitivity analysis(different evaluation time)
+
+```{r}
+set.seed(123)
+
+B <- 5000
+t_list <- c(2.5, 5, 7.5)
+
+out_time <- data.frame(
+  t_eval = t_list,
+  mean_diff = NA_real_,
+  sd_diff = NA_real_,
+  se_diff = NA_real_,
+  lower = NA_real_,
+  upper = NA_real_
+)
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  delta_tau <- numeric(B)
+  
+  for (b in 1:B) {   #Suggested by Generative AI
+    
+    source("01_generate_data.R")
+    
+    pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    merged_j <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+    
+    delta_tau[b] <- mean(merged_j$pseudo[merged_j$A == 1]) -
+      mean(merged_j$pseudo[merged_j$A == 0])
+  }
+  
+  out_time$mean_diff[j] <- mean(delta_tau)
+  out_time$sd_diff[j]   <- sd(delta_tau)
+  out_time$se_diff[j]   <- out_time$sd_diff[j] / sqrt(B)
+  out_time$lower[j]     <- out_time$mean_diff[j] - 1.96 * out_time$se_diff[j]
+  out_time$upper[j]     <- out_time$mean_diff[j] + 1.96 * out_time$se_diff[j]
+}
+
+out_time
+
+plot(out_time$t_eval, out_time$mean_diff, type = "b",
+     xlab = "Evaluation time (tau)",
+     ylab = "Monte Carlo mean treatment contrast")
+
+arrows(
+  x0 = out_time$t_eval,
+  y0 = out_time$lower,
+  x1 = out_time$t_eval,
+  y1 = out_time$upper,
+  angle = 90,
+  code = 3,
+  length = 0.05
+)
+
+abline(h = 0, col = "blue")
+
+## Pseudo-value Regression Model
+
+
+# Single-run regression across tau
+
+t_list <- c(2.5, 5, 7.5)
+AX <- unique(dat[, c("idx", "A")])
+
+reg_out <- data.frame(
+  t_eval = t_list,
+  beta_A = NA,
+  p_A = NA
+)
+
+for (j in seq_along(t_list)) {
+  t_eval <- t_list[j]
+  pseudo_j <- MCC::GenPseudo(data = dat, tau = t_eval)
+  reg_dat <- merge(AX, pseudo_j[, c("idx", "pseudo")], by = "idx")
+  
+  fit <- lm(pseudo ~ A, data = reg_dat)
+  s <- summary(fit)$coefficients
+  
+  reg_out$beta_A[j] <- s["A", "Estimate"]
+  reg_out$p_A[j] <- s["A", "Pr(>|t|)"]
+}
+
+reg_out
+
+
+## Type I error
+
+
+
+set.seed(123)
+
+B <- 5000
+alpha <- 0.05
+t_list <- c(2.5, 5, 7.5)
+
+type1_result <- data.frame(
+  t_eval = t_list,
+  reject_rate = NA,
+  mean_beta = NA,
+  se_reject = NA,
+  lower = NA,
+  upper = NA
+)
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  reject <- logical(B)
+  beta <- numeric(B)
+  
+  for (b in 1:B) {
+    
+    alphaA <- 0
+    source("01_generate_data.R")
+    
+    pseudo_b <- MCC::GenPseudo(data = dat, tau = t_eval)
+    
+    AX <- unique(dat[, c("idx", "A")])
+    reg_dat <- merge(AX, pseudo_b[, c("idx", "pseudo")], by = "idx")
+    
+    fit <- lm(pseudo ~ A, data = reg_dat)
+    s <- summary(fit)$coefficients
+    
+    beta[b] <- s["A", "Estimate"]
+    reject[b] <- s["A", "Pr(>|t|)"] < alpha
+  }
+  
+  type1_result$reject_rate[j] <- mean(reject)
+  type1_result$mean_beta[j] <- mean(beta)
+  
+  type1_result$se_reject[j] <- sqrt(type1_result$reject_rate[j] *
+                                      (1 - type1_result$reject_rate[j]) / B)
+  
+  type1_result$lower[j] <- max(0,
+                               type1_result$reject_rate[j] -
+                                 1.96 * type1_result$se_reject[j])
+  
+  type1_result$upper[j] <- min(1,
+                               type1_result$reject_rate[j] +
+                                 1.96 * type1_result$se_reject[j])
+  
+  
+}
+
+type1_result
+
+
+
+
+type1_result
+
+plot(type1_result$t_eval, type1_result$reject_rate, type = "b",
+     ylim = c(0, 1),
+     xlab = "Evaluation time",
+     ylab = "Type I error")
+
+arrows(
+  x0 = type1_result$t_eval,
+  y0 = type1_result$lower,
+  x1 = type1_result$t_eval,
+  y1 = type1_result$upper,
+  angle = 90,
+  code = 3,
+  length = 0.05
+)
+
+abline(h = 0.05, col = "blue")
+
+
+
+
+## Power
+
+```{r}
+
+# Type II error
+set.seed(123)
+
+B <- 5000
+alpha <- 0.05
+t_list <- c(2.5, 5, 7.5)
+
+alphaA <- log(1.5)
+
+power_out <- data.frame(
+  t_eval = t_list,
+  power = NA_real_,
+  mean_beta = NA_real_,
+  se_power = NA_real_,
+  lower = NA_real_,
+  upper = NA_real_
+)
+
+for (j in seq_along(t_list)) {
+  
+  t_eval <- t_list[j]
+  reject <- logical(B)
+  beta <- numeric(B)
+  
+  for (b in 1:B) {
+    
+    source("01_generate_data.R")
+    if (b == 1 && j == 1) {
+      cat("alphaA in global env =", alphaA, "\n")
+      cat("beta_event used =", paste(beta_event, collapse=", "), "\n")
+    }
+    
+    pseudo_b <- MCC::GenPseudo(data = dat, tau = t_eval)
+    AX <- unique(dat[, c("idx", "A")])
+    reg_dat <- merge(AX, pseudo_b[, c("idx", "pseudo")], by = "idx")
+    
+    fit <- lm(pseudo ~ A, data = reg_dat)
+    s <- summary(fit)$coefficients
+    
+    beta[b] <- s["A", "Estimate"]
+    reject[b] <- s["A", "Pr(>|t|)"] < alpha
+  }
+  
+  power_out$power[j] <- mean(reject)
+  power_out$mean_beta[j] <- mean(beta)
+  
+  power_out$se_power[j] <- sqrt(power_out$power[j] * (1 - power_out$power[j]) / B)
+  power_out$lower[j] <- max(0, power_out$power[j] - 1.96 * power_out$se_power[j])
+  power_out$upper[j] <- min(1, power_out$power[j] + 1.96 * power_out$se_power[j])
+}
+
+power_out
+
+plot(power_out$t_eval, power_out$power, type = "b",
+     ylim = c(0, 1),
+     xlab = "Evaluation time (tau)",
+     ylab = "Power")
+
+arrows(
+  x0 = power_out$t_eval,
+  y0 = power_out$lower,
+  x1 = power_out$t_eval,
+  y1 = power_out$upper,
+  angle = 90,
+  code = 3,
+  length = 0.05
+)
+
+abline(h = alpha, col = "blue")
