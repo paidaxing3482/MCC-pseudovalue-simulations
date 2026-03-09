@@ -12,7 +12,7 @@ output:
 
 ------------------------------------------------------------------------
 
-# Objective
+# Objective - evaluate the behavior of pseudo-value regression for recurrent event outcomes under the null and alternative settings.
 
 ## Sanity check
 
@@ -40,7 +40,7 @@ source("01_generate_data.R")
 
 set.seed(123)
 
-B <- 500
+B <- 5000
 delta_hat <- numeric(B)
 
 for (b in 1:B) {
@@ -68,7 +68,7 @@ This distribution is centered at zero, suggesting no bias
 ```{r}
 set.seed(123)
 
-B <- 500
+B <- 5000
 t_list <- c(2.5, 5, 7.5)
 
 out_time <- data.frame(
@@ -159,14 +159,17 @@ reg_out
 
 set.seed(123)
 
-B <- 500
+B <- 5000
 alpha <- 0.05
 t_list <- c(2.5, 5, 7.5)
 
 type1_result <- data.frame(
   t_eval = t_list,
   reject_rate = NA,
-  mean_beta = NA
+  mean_beta = NA,
+  se_reject = NA,
+  lower = NA,
+  upper = NA
 )
 
 for (j in seq_along(t_list)) {
@@ -192,19 +195,45 @@ for (j in seq_along(t_list)) {
     reject[b] <- s["A", "Pr(>|t|)"] < alpha
   }
   
-  type1_result$reject_rate[j] <- mean(reject)
-  type1_result$mean_beta[j] <- mean(beta)
+type1_result$reject_rate[j] <- mean(reject)
+type1_result$mean_beta[j] <- mean(beta)
+
+type1_result$se_reject[j] <- sqrt(type1_result$reject_rate[j] *
+                                 (1 - type1_result$reject_rate[j]) / B)
+
+type1_result$lower[j] <- max(0,
+                             type1_result$reject_rate[j] -
+                             1.96 * type1_result$se_reject[j])
+
+type1_result$upper[j] <- min(1,
+                             type1_result$reject_rate[j] +
+                             1.96 * type1_result$se_reject[j])
+  
+  
 }
 
-
+type1_result
 ```
 
 ```{r}
 
 type1_result
+
 plot(type1_result$t_eval, type1_result$reject_rate, type = "b",
+     ylim = c(0, 1),
      xlab = "Evaluation time",
      ylab = "Type I error")
+
+arrows(
+  x0 = type1_result$t_eval,
+  y0 = type1_result$lower,
+  x1 = type1_result$t_eval,
+  y1 = type1_result$upper,
+  angle = 90,
+  code = 3,
+  length = 0.05
+)
+
 abline(h = 0.05, col = "blue")
 
 
@@ -217,7 +246,7 @@ abline(h = 0.05, col = "blue")
 # Type II error
 set.seed(123)
 
-B <- 500
+B <- 5000
 alpha <- 0.05
 t_list <- c(2.5, 5, 7.5)
 
