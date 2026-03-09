@@ -1,45 +1,42 @@
 ---
+title: "Simulation Study for Pseudo-value Regression"
+author: "FengQi (Cynthia) Song"
+date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  html_document: default
+  pdf_document:
+    toc: true
+    number_sections: true
+  html_document:
+    toc: true
 ---
-#new test
+
+------------------------------------------------------------------------
+
+# Objective - evaluate the behavior of pseudo-value regression for recurrent event outcomes under the null and alternative settings.
+
+## Sanity check
 
 ```{r}
 
 library(MCC)
-setwd("~/MCC Research")
 source("01_generate_data.R")
-
-```
-
-
-```{r}
-
-# this generate pseudo-values at a fixed evaluation time
 t_eval <- 5
-
-pseudo <- MCC::GenPseudo(
-  data = dat,
-  tau  = t_eval
-)
+pseudo <- MCC::GenPseudo(data = dat, tau = t_eval)
 
 str(pseudo)
 head(pseudo)
 
-
-```
-```{r}
 AX <- unique(dat[, c("idx", "A", "X")])
 merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
 
 tapply(merged$pseudo, merged$A, mean)
-tapply(merged$pseudo, merged$A, summary)
-
 ```
-```{r}
 
-#Monte Carlo validation under the null
+## Monte Carlo validation
+
+```{r}
+library(MCC)
+source("01_generate_data.R")
 
 set.seed(123)
 
@@ -47,25 +44,28 @@ B <- 500
 delta_hat <- numeric(B)
 
 for (b in 1:B) {
-  
   source("01_generate_data.R")
   pseudo <- MCC::GenPseudo(data = dat, tau = 5)
-  
+
   AX <- unique(dat[, c("idx", "A")])
   merged <- merge(AX, pseudo[, c("idx", "pseudo")], by = "idx")
-  
+
   delta_hat[b] <- mean(merged$pseudo[merged$A == 1]) -
                   mean(merged$pseudo[merged$A == 0])
 }
 
-summary(delta_hat)
-mean(delta_hat)
+hist(delta_hat, breaks = 30,
+     main = "Monte Carlo distribution",
+     xlab = "Treatment effect")
+abline(v = 0, col = "blue", lwd = 2)
 
 ```
 
+This distribution is centered at zero, suggesting no bias
+
+## Sensitivity analysis(different evaluation time)
 
 ```{r}
-
 set.seed(123)
 
 B <- 500
@@ -121,13 +121,13 @@ arrows(
 )
 
 abline(h = 0, col = "blue")
+
 ```
 
-
+## Pseudo-value Regression Model
 
 ```{r}
-
-# Pseudo-value regression
+# Single-run regression across tau
 
 t_list <- c(2.5, 5, 7.5)
 AX <- unique(dat[, c("idx", "A")])
@@ -151,11 +151,11 @@ for (j in seq_along(t_list)) {
 }
 
 reg_out
-
 ```
 
+## Type I error
+
 ```{r}
-# Type I error
 
 set.seed(123)
 
@@ -166,7 +166,10 @@ t_list <- c(2.5, 5, 7.5)
 type1_result <- data.frame(
   t_eval = t_list,
   reject_rate = NA,
-  mean_beta = NA
+  mean_beta = NA,
+  se_reject = NA,
+  lower = NA,
+  upper = NA
 )
 
 for (j in seq_along(t_list)) {
@@ -192,16 +195,54 @@ for (j in seq_along(t_list)) {
     reject[b] <- s["A", "Pr(>|t|)"] < alpha
   }
   
-  type1_result$reject_rate[j] <- mean(reject)
-  type1_result$mean_beta[j] <- mean(beta)
+type1_result$reject_rate[j] <- mean(reject)
+type1_result$mean_beta[j] <- mean(beta)
+
+type1_result$se_reject[j] <- sqrt(type1_result$reject_rate[j] *
+                                 (1 - type1_result$reject_rate[j]) / B)
+
+type1_result$lower[j] <- max(0,
+                             type1_result$reject_rate[j] -
+                             1.96 * type1_result$se_reject[j])
+
+type1_result$upper[j] <- min(1,
+                             type1_result$reject_rate[j] +
+                             1.96 * type1_result$se_reject[j])
+  
+  
 }
 
 type1_result
-#The pseudo-value regression estimator was approximately unbiased under the null setting, and the empirical Type I error was close to the nominal 5% level across evaluation time
-
 ```
 
 ```{r}
+
+type1_result
+
+plot(type1_result$t_eval, type1_result$reject_rate, type = "b",
+     ylim = c(0, 1),
+     xlab = "Evaluation time",
+     ylab = "Type I error")
+
+arrows(
+  x0 = type1_result$t_eval,
+  y0 = type1_result$lower,
+  x1 = type1_result$t_eval,
+  y1 = type1_result$upper,
+  angle = 90,
+  code = 3,
+  length = 0.05
+)
+
+abline(h = 0.05, col = "blue")
+
+
+```
+
+## Power
+
+```{r}
+
 # Type II error
 set.seed(123)
 
@@ -272,5 +313,3 @@ arrows(
 
 abline(h = alpha, col = "blue")
 ```
-
-
