@@ -1,6 +1,8 @@
 ---
 title: "analyze_power"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r}
@@ -12,7 +14,6 @@ power_all <- rbind(p12, p13, p14)
 
 power_all
 ```
-
 
 ```{r}
 cols <- c("blue","red","darkgreen")
@@ -34,4 +35,3 @@ legend("bottomright",
        legend=c("HR = 1.2","HR = 1.3","HR = 1.4"),
        col=cols, lty=1, lwd=2, pch=16)
 ```
-

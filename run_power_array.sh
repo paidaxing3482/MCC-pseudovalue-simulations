@@ -8,4 +8,4 @@
 #SBATCH --array=1-3
 
 module load r
-Rscript run_power_array.R
+Rscript run_power_array.R3
