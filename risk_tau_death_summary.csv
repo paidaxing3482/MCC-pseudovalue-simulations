@@ -1,0 +1,13 @@
+"t_eval","scenario","lambda_c","lambda_d","risk_prop"
+2,"baseline",0.25,0.25,0.9146725
+3,"baseline",0.25,0.25,0.8747925
+4,"baseline",0.25,0.25,0.8361025
+2,"high_censor",0.4,0.25,0.9150875
+3,"high_censor",0.4,0.25,0.8738675
+4,"high_censor",0.4,0.25,0.8363725
+2,"high_death",0.25,0.4,0.9149375
+3,"high_death",0.25,0.4,0.8751125
+4,"high_death",0.25,0.4,0.83665
+2,"high_both",0.4,0.4,0.9146
+3,"high_both",0.4,0.4,0.8744325
+4,"high_both",0.4,0.4,0.83563

@@ -186,7 +186,7 @@ set.seed(123)
 
 B <- 100
 alpha <- 0.05
-t_eval <- 2.5 
+t_eval <- 2 
 alphaA <- 0 
 
 type1_result <- data.frame(
@@ -266,14 +266,13 @@ abline(h = 0.05, col = "blue")
 ## Power
 
 ```{r}
-
-# Type II error
+## Power,Type II error
 
 set.seed(123)
 
 B <- 100
 alpha <- 0.05
-t_eval <- 2.5
+t_eval <- 2
 alphaA <- log(1.2)
 
 power_out <- data.frame(
@@ -287,6 +286,12 @@ power_out <- data.frame(
   upper = NA_real_
 )
 
+# added
+risk_summary <- data.frame(
+  scenario = scenarios$scenario,
+  risk_prop = NA_real_
+)
+
 for (j in seq_len(nrow(scenarios))) {
   
   lambda_c <- scenarios$lambda_c[j]
@@ -298,6 +303,13 @@ for (j in seq_len(nrow(scenarios))) {
   for (b in 1:B) {
     
     source("01_generate_data.R")
+    
+    # new
+    risk_prop <- mean(tapply(dat$time > t_eval, dat$idx, any))
+    
+    if (b == 1) {
+      risk_summary$risk_prop[j] <- risk_prop
+    }
     
     pseudo_b <- MCC::GenPseudo(data = dat, tau = t_eval)
     AX <- unique(dat[, c("idx", "A")])
@@ -319,6 +331,9 @@ for (j in seq_len(nrow(scenarios))) {
 }
 
 power_out
+
+risk_summary
+
 
 ```
 

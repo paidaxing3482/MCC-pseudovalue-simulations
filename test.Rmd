@@ -1,0 +1,16 @@
+---
+title: "test"
+output: html_document
+---
+
+```{r}
+source("01_generate_data.R")
+head(dat, 20)
+table(dat$status)
+
+split_dat <- split(dat[, c("idx", "time", "status")], dat$idx)
+split_dat[[1]]
+split_dat[[2]]
+split_dat[[3]]
+```
+
