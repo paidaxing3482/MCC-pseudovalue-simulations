@@ -7,6 +7,7 @@ library(MCC)
 if (!exists("tau")) tau <- 10
 if (!exists("lambda_c")) lambda_c <- 0.25
 if (!exists("lambda_d")) lambda_d <- 0.25
+if (!exists("frailty_variance")) frailty_variance <- 0
 
 m <- 4
 base_event_rate <- m / tau
@@ -14,10 +15,14 @@ base_event_rate <- m / tau
 if (!exists("alphaA")) alphaA <- 0
 if (!exists("alphaX")) alphaX <- log(1.25)
 
-if (!exists("N_per_arm")) N_per_arm <- 200
+# Allow external scripts to control sample size safely
+if (exists("N_per_arm_external")) {
+  N_per_arm <- N_per_arm_external
+} else {
+  if (!exists("N_per_arm")) N_per_arm <- 200
+}
+
 n_total <- 2 * N_per_arm
-
-
 
 
 # 2) Generate covariates
@@ -29,9 +34,6 @@ beta_event <- c(alphaA, alphaX)
 beta_death <- c(0, 0)
 
 
-
-
-
 # 3) Generate data
 dat <- GenData(
   base_death_rate  = lambda_d,
@@ -40,14 +42,12 @@ dat <- GenData(
   beta_event       = beta_event,
   censoring_rate   = lambda_c,
   covariates       = covariates,
-  frailty_variance = 0,
+  frailty_variance = frailty_variance,
   min_death_rate   = 1e-6,
   min_event_rate   = 1e-6,
   n                = n_total,
   tau              = tau
 )
-
-
 
 
 # 4) Sanity checks
