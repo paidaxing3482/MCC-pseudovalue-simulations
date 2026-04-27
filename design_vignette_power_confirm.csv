@@ -1,0 +1,4 @@
+"N_per_arm","power_adjusted","power_treatment_only","n_unique_ids","nrow_dat","nrow_pseudo","n_unique_pseudo_ids"
+900,0.77,0.772,1800,3434,1800,1800
+950,0.83,0.826,1900,3587,1900,1900
+1000,0.838,0.834,2000,3875,2000,2000

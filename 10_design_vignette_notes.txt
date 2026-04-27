@@ -1,0 +1,23 @@
+Primary endpoint:
+Difference in MCF / AUMCF at tau = 4 years.
+
+Primary scenario:
+lambda_c = 0.25
+lambda_d = 0.25
+frailty_variance = 0
+
+Target power:
+80%
+
+Effect sizes:
+log(1.2), log(1.3), log(1.4)
+
+Sample sizes per arm:
+50, 100, 150, 200, 250, 300
+
+Analyses compared:
+1. Covariate-adjusted analysis: pseudo ~ A + X
+2. Treatment-only analysis: pseudo ~ A
+
+Goal:
+Compare the achieved power/required sample size under the covariate-adjusted analysis versus the treatment-only analysis.
