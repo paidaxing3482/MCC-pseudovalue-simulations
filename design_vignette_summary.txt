@@ -1,0 +1,44 @@
+Design vignette / sample size summary
+
+Goal:
+The goal is to study the sample size needed to achieve approximately 80% power for the primary endpoint defined as the difference in MCF/AUMCF at tau = 4 years.
+
+Simulation setting:
+- Baseline setting with lambda_c = 0.25 and lambda_d = 0.25
+- No frailty
+- Treatment effect alphaA = log(1.2)
+- Baseline covariate effect alphaX = log(1.25)
+- Evaluation time tau = 4
+
+Analyses compared:
+1. Covariate-adjusted analysis, including treatment and the baseline covariate.
+2. Treatment-only analysis, including treatment only.
+
+Implementation note:
+During the refinement, I found that the sample size was not initially being passed correctly into the data-generation script. I updated 01_generate_data.R to allow an external sample size input through N_per_arm_external. I also added sanity checks to confirm that the number of generated subjects and pseudo-values matches the intended sample size.
+
+Confirmatory results:
+Using B = 500 Monte Carlo repetitions, the estimated powers were:
+
+N per arm = 900:
+- Covariate-adjusted: 0.770
+- Treatment-only: 0.772
+
+N per arm = 950:
+- Covariate-adjusted: 0.830
+- Treatment-only: 0.826
+
+N per arm = 1000:
+- Covariate-adjusted: 0.838
+- Treatment-only: 0.834
+
+Summary:
+Under this baseline design vignett, the sample size needed to reach approximately 80% power appears to be around 950 particip per arm. The covariate-adjusted and treatment-only analyses have very similar power in this setting, with only small differences between them.
+
+Files:
+- 01_generate_data.R
+- 11_sample_size_design_refined.R
+- design_vignette_power_confirm.csv
+- 12_plot_design_vignette_power.R
+- design_vignette_power_confirm.pdf
+- design_vignette_power_confirm.png
